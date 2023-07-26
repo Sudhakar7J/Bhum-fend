@@ -1,78 +1,79 @@
-import React, { useState } from "react";
-import { PDFDocument } from "pdf-lib";
-import { Document, Page, pdfjs } from "react-pdf";
-import "react-pdf/dist/esm/Page/AnnotationLayer.css";
-import "react-pdf/dist/esm/Page/TextLayer.css";
-import { FIELD_TYPE_MAP } from "./utils";
-import usePDFViewer from "./hooks/usePDFViewer";
+import React, { useState } from "react"
+import { PDFDocument } from "pdf-lib"
+import { Document, Page, pdfjs } from "react-pdf"
+import "react-pdf/dist/esm/Page/AnnotationLayer.css"
+import "react-pdf/dist/esm/Page/TextLayer.css"
+import { FIELD_TYPE_MAP } from "./utils"
+import usePDFViewer from "./hooks/usePDFViewer"
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.js",
   import.meta.url
-).toString();
+).toString()
 
 const PDFViewer = () => {
-  const domain = process.env.REACT_APP_API_URL;
-  const url = `${domain}/example.pdf`;
+  // State variables
+  const [pdfData, setPdfData] = useState(null)
+  const [pdfView, setPdfView] = useState(null)
+  const [formValues, setFormValues] = useState({})
 
-  const [pdfData, setPdfData] = useState(null);
-  const [pdfView, setPdfView] = useState(null);
+  // Custom hook to handle PDF-related functionalities
+  const { getInitialFormValues, fetchPDF, updatePDF } = usePDFViewer()
 
-  const [formValues, setFormValues] = useState({});
-
-  const { getInitialFormValues, fetchPDF, updatePDF } = usePDFViewer();
-
+  // Function to initialize form field values from the PDF
   const initializeFormValues = (fields) => {
-    const initialFormValues = { ...getInitialFormValues(fields) };
+    const initialFormValues = { ...getInitialFormValues(fields) }
+    setFormValues({ ...initialFormValues })
+  }
 
-    setFormValues({ ...initialFormValues });
-  };
-
+  // Function to load the PDF from the server
   const loadPDF = async () => {
-    const pdfDoc = await fetchPDF();
+    const pdfDoc = await fetchPDF()
 
-    initializeFormValues(pdfDoc.getForm().getFields());
+    initializeFormValues(pdfDoc.getForm().getFields())
 
-    const pdfFile = await pdfDoc.save();
+    const pdfFile = await pdfDoc.save()
 
-    setPdfData(pdfFile);
+    setPdfData(pdfFile)
 
     const modifiedPdfBlob = new Blob([pdfFile], {
       type: "application/pdf",
-    });
+    })
 
-    setPdfView(URL.createObjectURL(modifiedPdfBlob));
-  };
+    setPdfView(URL.createObjectURL(modifiedPdfBlob))
+  }
 
   // Function to set the value of a field based on its type
   const setFieldValue = (field) => {
-    const newFieldValue = formValues[field.getName()];
+    const newFieldValue = formValues[field.getName()]
     if (FIELD_TYPE_MAP[field.constructor.name] === "text") {
-      field.setText(newFieldValue);
+      field.setText(newFieldValue)
     } else {
-      field.select(newFieldValue);
+      field.select(newFieldValue)
     }
-  };
+  }
 
+  // Function to save the modified PDF back to the server
   const savePDF = async () => {
     if (!pdfData) {
-      return;
+      return
     }
-    const pdfDocUpdated = await PDFDocument.load(pdfData);
+    const pdfDocUpdated = await PDFDocument.load(pdfData)
 
-    const formData = await pdfDocUpdated.getForm();
+    const formData = await pdfDocUpdated.getForm()
 
-    const formFields = formData.getFields();
+    const formFields = formData.getFields()
 
     formFields.forEach((field) => {
-      setFieldValue(field);
-    });
+      setFieldValue(field)
+    })
 
-    const fileToBeUploaded = await pdfDocUpdated.save();
+    const fileToBeUploaded = await pdfDocUpdated.save()
 
-    void updatePDF(fileToBeUploaded);
-  };
+    void updatePDF(fileToBeUploaded)
+  }
 
+  // Event handler for changes in form field values
   const onTextChange = (event) => {
     // This is a hacky if block as the value returned by the
     // onInput event is wrong for this field. It is supposed
@@ -84,24 +85,24 @@ const PDFViewer = () => {
         setFormValues((prev) => ({
           ...prev,
           [event.target.name]: "parttime",
-        }));
-
-        return;
+        }))
+        return
       }
 
       setFormValues((prev) => ({
         ...prev,
         [event.target.name]: "fulltime",
-      }));
-      return;
+      }))
+      return
     }
 
     setFormValues((prev) => ({
       ...prev,
       [event.target.name]: event.target.value,
-    }));
-  };
+    }))
+  }
 
+  // Render the PDF viewer component
   return (
     <div>
       <button style={{ margin: 20 }} onClick={loadPDF}>
@@ -121,7 +122,7 @@ const PDFViewer = () => {
         )}
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default PDFViewer;
+export default PDFViewer
