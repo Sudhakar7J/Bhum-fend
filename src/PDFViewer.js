@@ -16,6 +16,8 @@ const PDFViewer = () => {
   const [pdfData, setPdfData] = useState(null)
   const [pdfView, setPdfView] = useState(null)
   const [formValues, setFormValues] = useState({})
+  const [pdfSaved, setPdfSaved] = useState(false)
+  const [error, setError] = useState(null)
 
   // Custom hook to handle PDF-related functionalities
   const { getInitialFormValues, fetchPDF, updatePDF } = usePDFViewer()
@@ -28,19 +30,23 @@ const PDFViewer = () => {
 
   // Function to load the PDF from the server
   const loadPDF = async () => {
-    const pdfDoc = await fetchPDF()
+    try {
+      const pdfDoc = await fetchPDF()
+      initializeFormValues(pdfDoc.getForm().getFields())
 
-    initializeFormValues(pdfDoc.getForm().getFields())
+      const pdfFile = await pdfDoc.save()
+      setPdfData(pdfFile)
 
-    const pdfFile = await pdfDoc.save()
+      const modifiedPdfBlob = new Blob([pdfFile], {
+        type: "application/pdf",
+      })
+      setPdfView(URL.createObjectURL(modifiedPdfBlob))
 
-    setPdfData(pdfFile)
-
-    const modifiedPdfBlob = new Blob([pdfFile], {
-      type: "application/pdf",
-    })
-
-    setPdfView(URL.createObjectURL(modifiedPdfBlob))
+      setPdfSaved(false)
+      setError(null)
+    } catch (err) {
+      setError("Error while loading the PDF. Please try again.")
+    }
   }
 
   // Function to set the value of a field based on its type
@@ -58,19 +64,23 @@ const PDFViewer = () => {
     if (!pdfData) {
       return
     }
-    const pdfDocUpdated = await PDFDocument.load(pdfData)
 
-    const formData = await pdfDocUpdated.getForm()
+    try {
+      const pdfDocUpdated = await PDFDocument.load(pdfData)
+      const formData = await pdfDocUpdated.getForm()
+      const formFields = formData.getFields()
 
-    const formFields = formData.getFields()
+      formFields.forEach((field) => {
+        setFieldValue(field)
+      })
 
-    formFields.forEach((field) => {
-      setFieldValue(field)
-    })
-
-    const fileToBeUploaded = await pdfDocUpdated.save()
-
-    void updatePDF(fileToBeUploaded)
+      const fileToBeUploaded = await pdfDocUpdated.save()
+      await updatePDF(fileToBeUploaded)
+      setPdfSaved(true)
+      setError(null)
+    } catch (err) {
+      setError("Error while saving the PDF. Please try again.")
+    }
   }
 
   // Event handler for changes in form field values
@@ -110,6 +120,8 @@ const PDFViewer = () => {
       </button>
       <button onClick={savePDF}>Save PDF</button>
       <div>
+        {pdfSaved && <p>PDF saved to the server!</p>}
+        {error && <p style={{ color: "red" }}>{error}</p>}
         {pdfData && (
           <Document file={pdfView}>
             <Page
