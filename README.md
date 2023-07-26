@@ -31,9 +31,8 @@
 - Better practices to do this is to host it in a Web service.
 - I tried implementing the NestJS backend in Amazon AWS EC2, with Postgres as Amazon RDS Database and ran the hosted server.
 
-  ![Alt text](image-3.png)
-  ![Alt text](image-4.png)
+![Alt text](image-3.png)
+![Alt text](image-4.png)
 
-  - the example.pdf file is being fetched from the hosted EC2 instance.
-  - Due to unforseen circumstances of my Amazon AWS Free tier, getting exhausted, I am not able to provide you with the hosted website on the go.
-  -
+- the example.pdf file is being fetched from the hosted EC2 instance.
+- Due to unforseen circumstances of my Amazon AWS Free tier, getting exhausted, I am not able to provide you with the hosted website on the go.
